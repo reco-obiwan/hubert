@@ -9,6 +9,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import consume_prefix_in_state_dict_if_present
 
+# 100개 클러스터만 준비되어 있음
+# https://github.com/bshall/hubert/releases/tag/v0.1
 URLS = {
     "hubert-discrete": "https://github.com/bshall/hubert/releases/download/v0.1/hubert-discrete-e9416457.pt",
     "hubert-soft": "https://github.com/bshall/hubert/releases/download/v0.1/hubert-soft-0d54a1f4.pt",
@@ -79,7 +81,7 @@ class HubertSoft(Hubert):
         x, _ = self.encode(wav)
         return self.proj(x)
 
-
+# 왜 504개에 클러스터를 디폴트로 사용했는지 모르겠음.
 class HubertDiscrete(Hubert):
     def __init__(self, kmeans):
         super().__init__(504)
@@ -158,6 +160,7 @@ class TransformerEncoder(nn.Module):
         )
         self.num_layers = num_layers
 
+    #왜 모든 layer에 mask 값을 넣어주는지 모르겠음.
     def forward(
         self,
         src: torch.Tensor,
@@ -178,7 +181,7 @@ def _compute_mask(
     mask_prob: float,
     mask_length: int,
     device: torch.device,
-    min_masks: int = 0,
+    min_masks: int = 2,
 ) -> torch.Tensor:
     batch_size, sequence_length = shape
 
@@ -191,6 +194,7 @@ def _compute_mask(
         )
 
     # compute number of masked spans in batch
+    # 80% MASK를 하는 것 같음
     num_masked_spans = int(mask_prob * sequence_length / mask_length + random.random())
     num_masked_spans = max(num_masked_spans, min_masks)
 
@@ -220,6 +224,7 @@ def _compute_mask(
         .expand((batch_size, num_masked_spans, mask_length))
         .reshape(batch_size, num_masked_spans * mask_length)
     )
+
     mask_idxs = mask_indices + offsets
 
     # scatter indices to mask

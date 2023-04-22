@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset
 import torchaudio
 
-
+# max_samples 변경해야 함. 최대 1분으로 변경 필요.
 class AcousticUnitsDataset(Dataset):
     def __init__(
         self,

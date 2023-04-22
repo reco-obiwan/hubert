@@ -15,7 +15,9 @@ def cluster(args):
         subset = [line.strip() for line in file]
 
     logger.info(f"Loading features from {args.in_dir}")
+
     features = []
+
     for path in subset:
         in_path = args.in_dir / path
         features.append(np.load(in_path.with_suffix(".npy")))

@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
+from torch import multiprocessing
+from torch.nn.parallel import DistributedDataParallel
 from torch.nn.modules.utils import consume_prefix_in_state_dict_if_present
 
 from hubert.model import Hubert, URLS
@@ -82,7 +82,7 @@ def train(rank, world_size, args):
         consume_prefix_in_state_dict_if_present(checkpoint, "module.")
         hubert.load_state_dict(checkpoint, strict=False)
 
-    hubert = DDP(hubert, device_ids=[rank])
+    hubert = DistributedDataParallel(hubert, device_ids=[rank])
 
     ####################################################################################
     # Initialze optimizer and grad scaler
@@ -385,7 +385,7 @@ def train(rank, world_size, args):
 
         logger.info(
             f"""
-            train -- epoch: {epoch}, masked loss: {epoch_masked_loss.value:.4f}, unmasked loss: {epoch_unmasked_loss.value:.4f}, 
+            train -- epoch: {epoch}, masked loss: {epoch_masked_loss.value:.4f}, unmasked loss: {epoch_unmasked_loss.value:.4f},
                      masked accuracy: {epoch_masked_accuracy.value * 100:.2f}, umasked accuracy: {epoch_unmasked_accuracy.value * 100:.2f}
             """
         )
@@ -399,7 +399,7 @@ def train(rank, world_size, args):
 
 def train_hubert(args):
     world_size = torch.cuda.device_count()
-    mp.spawn(
+    multiprocessing.spawn(
         train,
         args=(world_size, args),
         nprocs=world_size,
@@ -445,7 +445,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     world_size = torch.cuda.device_count()
-    mp.spawn(
+
+    multiprocessing.spawn(
         train,
         args=(world_size, args),
         nprocs=world_size,
